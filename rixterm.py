@@ -23,7 +23,7 @@ def load_python_module(name, pathname):
     spec.loader.exec_module(module)
     return module
 
-def load_monitor_filters(monitor_dir, prefix=None, terminal=None, quiet=True):
+def load_custom_filters(monitor_dir, prefix=None, terminal=None, config=None, quiet=True):
     if not os.path.isdir(monitor_dir):
         return
     for name in os.listdir(monitor_dir):
@@ -32,10 +32,10 @@ def load_monitor_filters(monitor_dir, prefix=None, terminal=None, quiet=True):
         path = os.path.join(monitor_dir, name)
         if not os.path.isfile(path):
             continue
-        load_monitor_filter(path, terminal, quiet)
+        load_custom_filter(path, terminal, config, quiet)
 
 
-def load_monitor_filter(path, terminal=None, quiet=True):
+def load_custom_filter(path, terminal=None, config=None, quiet=True):
     name = os.path.basename(path)
     name = name[: name.find(".")]
     module = load_python_module("filters.%s" % name, path)
@@ -46,7 +46,7 @@ def load_monitor_filter(path, terminal=None, quiet=True):
             or cls == FilterBase
         ):
             continue
-        obj = cls(terminal)
+        obj = cls(terminal, config)
         miniterm.TRANSFORMATIONS[obj.NAME] = obj
         if not quiet:
             print('--- Found filter: \'%s\' ---' % obj.NAME) 
@@ -185,10 +185,18 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
         default=[])
 
     group.add_argument(
-        '--filter_dir',
+        '-fd', '--filter-dir',
         metavar='DIR',
         help='directory where to look for additional filters',
         default='filters')
+
+    group.add_argument(
+        '-fc','--filter-cfg',
+        action='append',
+        metavar='CFG',
+        help='config parameter passed to filters',
+        default=[])
+
 
     group.add_argument(
         '--eol',
@@ -249,6 +257,18 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
         filters = args.filter
     else:
         filters = ['default','send_on_enter']
+
+    filter_cfg = {}
+    if args.filter_cfg:
+        for cfg in args.filter_cfg:
+            l = cfg.split('=',1)
+            a = l[0]
+            b = l[1] if len(l)>1 else ''
+            if filter_cfg.get(a) and not args.quiet:
+                print('--- WARNING: filter config \'%s\' overriden ---' % a)
+            filter_cfg[a]=b
+
+    #print(filter_cfg)
 
     while serial_instance is None:
         # no port given on command line -> ask user now
@@ -313,8 +333,8 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
     rixterm.set_rx_encoding(args.serial_port_encoding)
     rixterm.set_tx_encoding(args.serial_port_encoding)
 
-    load_monitor_filters(args.filter_dir, 'filter_', rixterm, args.quiet)
-    flt = SendOnEnter(rixterm)
+    load_custom_filters(args.filter_dir, 'filter_', rixterm, filter_cfg, args.quiet)
+    flt = SendOnEnter(rixterm, filter_cfg)
     miniterm.TRANSFORMATIONS[flt.NAME] = flt
 
     rixterm.filters=filters

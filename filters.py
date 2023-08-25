@@ -1,12 +1,10 @@
 from serial.tools import miniterm
 
 class FilterBase(miniterm.Transform):
-    def __init__(self, terminal):
+    def __init__(self, terminal, config):
         miniterm.Transform.__init__(self)
         self.terminal=terminal
-
-    def __del__(self):
-        self.terminal= None
+        self.config=config
 
     def __call__(self):
         """Called by the miniterm library when the filter is actually used"""
@@ -18,8 +16,8 @@ class SendOnEnter(FilterBase):
     """Send text on enter"""
     NAME = "send_on_enter"
 
-    def __init__(self, terminal):
-        FilterBase.__init__(self,terminal)
+    def __init__(self, terminal, config):
+        FilterBase.__init__(self,terminal,config)
         self._buffer=''
 
     def tx(self, text):
