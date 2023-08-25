@@ -86,6 +86,18 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
     """Command line tool, entry point"""
     import argparse
 
+    home_dir = os.path.join(os.path.expanduser( '~' ) , '.rixterm')
+
+    class LoadFromFile (argparse.Action):
+        def __call__ (self, parser, namespace, values, option_string = None):
+            if not os.path.isfile(values):
+                values= os.path.join(home_dir, values)
+
+            with open(values,'r') as f:
+                # parse arguments in the file and store them in the target namespace
+                parser.parse_args(f.read().split(), namespace)
+
+
     parser = argparse.ArgumentParser(
         description='Miniterm - A simple terminal program for the serial port.')
 
@@ -96,13 +108,20 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
         default=default_port)
 
     parser.add_argument(
-        'baudrate',
+        '--file',
+        metavar='FILE',
+        action=LoadFromFile,
+        help='Load config from file')
+
+
+    group = parser.add_argument_group('port settings')
+
+    parser.add_argument(
+        '-b','--baudrate',
         nargs='?',
         type=int,
         help='set baud rate, default: %(default)s',
         default=default_baudrate)
-
-    group = parser.add_argument_group('port settings')
 
     group.add_argument(
         '--parity',
@@ -178,20 +197,20 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
         default='UTF-8')
 
     group.add_argument(
-        '-f', '--filter',
+        '--filter',
         action='append',
         metavar='NAME',
         help='add text transformation',
         default=[])
 
     group.add_argument(
-        '-fd', '--filter-dir',
+        '--filter-dir',
         metavar='DIR',
         help='directory where to look for additional filters',
         default='filters')
 
     group.add_argument(
-        '-fc','--filter-cfg',
+        '--filter-cfg',
         action='append',
         metavar='CFG',
         help='config parameter passed to filters',
@@ -241,7 +260,13 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
         help='show Python traceback on error',
         default=False)
 
-    args = parser.parse_args()
+    default_cfg = os.path.join(home_dir, 'default.cfg')
+    args = None
+    if os.path.isfile(default_cfg):
+        with open(default_cfg,'r') as f:
+            args = parser.parse_args(f.read().split(), args)
+
+    args = parser.parse_args(namespace=args)
 
     if args.menu_char == args.exit_char:
         parser.error('--exit-char can not be the same as --menu-char')
@@ -267,8 +292,6 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
             if filter_cfg.get(a) and not args.quiet:
                 print('--- WARNING: filter config \'%s\' overriden ---' % a)
             filter_cfg[a]=b
-
-    #print(filter_cfg)
 
     while serial_instance is None:
         # no port given on command line -> ask user now
@@ -334,6 +357,7 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
     rixterm.set_tx_encoding(args.serial_port_encoding)
 
     load_custom_filters(args.filter_dir, 'filter_', rixterm, filter_cfg, args.quiet)
+    load_custom_filters(os.path.join(os.path.expanduser( '~' ), '.rixterm', 'filters'), 'filter_', rixterm, filter_cfg, args.quiet)
     flt = SendOnEnter(rixterm, filter_cfg)
     miniterm.TRANSFORMATIONS[flt.NAME] = flt
 
