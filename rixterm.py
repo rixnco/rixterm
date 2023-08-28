@@ -90,6 +90,8 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
 
     class LoadFromFile (argparse.Action):
         def __call__ (self, parser, namespace, values, option_string = None):
+            if not values.endswith('.cfg'):
+                values+='.cfg'
             if not os.path.isfile(values):
                 values= os.path.join(home_dir, values)
 
@@ -108,7 +110,7 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
         default=default_port)
 
     parser.add_argument(
-        '--file',
+        '-f', '--file',
         metavar='FILE',
         action=LoadFromFile,
         help='Load config from file')
