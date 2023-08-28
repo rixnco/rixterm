@@ -101,7 +101,7 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
 
 
     parser = argparse.ArgumentParser(
-        description='Miniterm - A simple terminal program for the serial port.')
+        description='rxterm - A simple terminal program for the serial port.')
 
     parser.add_argument(
         'port',
@@ -245,7 +245,7 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
         '--menu-char',
         type=int,
         metavar='NUM',
-        help='Unicode code of special character that is used to control miniterm (menu), default: %(default)s',
+        help='Unicode code of special character that is used to control rxterm (menu), default: %(default)s',
         default=0x14)  # Menu: CTRL+T
 
     group = parser.add_argument_group('diagnostics')
@@ -367,7 +367,7 @@ def main(default_port=None, default_baudrate=115200, default_rts=None, default_d
     rixterm.update_transformations()
 
     if not args.quiet:
-        sys.stderr.write('--- Miniterm on {p.name}  {p.baudrate},{p.bytesize},{p.parity},{p.stopbits} ---\n'.format(
+        sys.stderr.write('--- rxterm on {p.name}  {p.baudrate},{p.bytesize},{p.parity},{p.stopbits} ---\n'.format(
             p=rixterm.serial))
         sys.stderr.write('--- Quit: {} | Menu: {} | Help: {} followed by {} ---\n'.format(
             key_description(rixterm.exit_character),
