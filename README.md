@@ -1,1 +1,1 @@
-# rixterm
+# rxterm
